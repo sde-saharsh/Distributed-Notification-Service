@@ -1,0 +1,29 @@
+{
+  "name": "distributed-notification-service",
+  "version": "1.0.0",
+  "description": "distributed-notification-service/ │ ├── src/ │   │ │   ├── config/ │   │   ├── database.js │   │   ├── redis.js │   │   └── env.js │   │ │   ├── models/ │   │   ├── user.model.js │   │   ├── notification.model.js │   │   ├── outbox.model.js │   │   └── delivery-log.model.js │   │ │   ├── modules/ │   │   │ │   │   ├── auth/ │   │   │   ├── auth.routes.js │   │   │   ├── auth.controller.js │   │   │   └── auth.service.js │   │   │ │   │   └── notifications/ │   │       ├── notification.routes.js │   │       ├── notification.controller.js │   │       ├── notification.service.js │   │       └── notification.validation.js │   │ │   ├── outbox/ │   │   └── outbox.relay.js │   │ │   ├── queues/ │   │   ├── queue.config.js │   │   ├── fanout.queue.js │   │   ├── email.queue.js │   │   ├── sms.queue.js │   │   └── push.queue.js │   │ │   ├── orchestrator/ │   │   └── fanout.service.js │   │ │   ├── workers/ │   │   ├── fanout.worker.js │   │   ├── email.worker.js │   │   ├── sms.worker.js │   │   └── push.worker.js │   │ │   ├── providers/ │   │   ├── email.provider.js │   │   ├── sms.provider.js │   │   └── push.provider.js │   │ │   ├── monitoring/ │   │   ├── metrics.js │   │   └── health.js │   │ │   ├── middleware/ │   │   ├── auth.middleware.js │   │   └── error.middleware.js │   │ │   ├── utils/ │   │   ├── logger.js │   │   └── errors.js │   │ │   ├── app.js │   │ │   └── processes/ │       ├── api.js │       ├── relay.js │       ├── fanout.js │       ├── email.js │       ├── sms.js │       └── push.js │ ├── tests/ │   ├── unit/ │   ├── integration/ │   └── load/ │       ├── notification-load.js │       ├── burst-test.js │       ├── stress-test.js │       └── soak-test.js │ ├── monitoring/ │   ├── prometheus/ │   │   └── prometheus.yml │   │ │   └── grafana/ │       ├── provisioning/ │       │   ├── datasources/ │       │   │   └── prometheus.yml │       │   └── dashboards/ │       └── dashboards/ │           ├── application-dashboard.json │           └── queue-dashboard.json │ ├── docker/ │   └── nginx/ │       └── nginx.conf │ ├── Dockerfile ├── docker-compose.yml ├── package.json ├── .env.example ├── .gitignore └── README.md",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sde-saharsh/Distributed-Notification-Service.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/sde-saharsh/Distributed-Notification-Service/issues"
+  },
+  "homepage": "https://github.com/sde-saharsh/Distributed-Notification-Service#readme",
+  "dependencies": {
+    "bullmq": "^6.7.1",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "ioredis": "^6.0.0",
+    "mongoose": "^9.12.0",
+    "nodemon": "^3.1.11"
+  }
+}
