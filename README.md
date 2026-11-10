@@ -137,6 +137,10 @@ cd Desktop
 cd 'Distributed Notification Service'
 node src/processes/sms.js
 
+cd Desktop
+cd 'Distributed Notification Service'
+node src/processes/dlq.js
+
 
 next prompt 
 
