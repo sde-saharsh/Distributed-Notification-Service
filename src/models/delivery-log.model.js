@@ -16,7 +16,7 @@ const deliveryLogSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "sent", "failed"],
+      enum: ["pending","processing", "sent", "failed"],
       default: "pending"
     },
 
@@ -27,6 +27,11 @@ const deliveryLogSchema = new mongoose.Schema(
 
     error: {
       type: String,
+      default: null
+    },
+
+    processingAt: {
+      type: Date,
       default: null
     }
   },

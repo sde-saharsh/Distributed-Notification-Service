@@ -12,29 +12,59 @@ const smsWorker = new Worker(
 
     const { notificationId, recipientId } = job.data;
 
+    const idempotencyKey = `${notificationId}:sms`;
+
     const notification = await Notification.findById(notificationId);
 
     if (!notification) {
       throw new Error("Notification not found");
     }
 
-    await DeliveryLog.findOneAndUpdate(
-      { notificationId, channel: "sms" },
-      {
-        $set: {
-          status: "pending",
-          error: null
-        }
-      },
-      { upsert: true, new: true }
+     await DeliveryLog.updateOne(
+        { notificationId, channel: "sms" },
+        {
+            $setOnInsert: {
+                notificationId,
+                channel: "sms",
+                status: "pending"
+            }
+        },
+        { upsert: true }
     );
+
+    const claimedDelivery = await DeliveryLog.findOneAndUpdate(
+        {
+            notificationId,
+            channel: "sms",
+            status: { $in: ["pending", "failed"] }
+        },
+        {
+            $set: {
+                status: "processing",
+                error: null
+            }
+        },
+        { returnDocument: "after" }
+    );
+
+    if (!claimedDelivery) {
+        console.log("SMS already processing or delivered. Skipping:", job.id);
+
+        return {
+            success: true,
+            skipped: true,
+            reason: "Already processing or delivered"
+        };
+    }
 
     await updateNotificationStatus(notificationId);
 
     try {
+      
       const result = await sendSMS({
         recipientId,
-        message: notification.message
+        message: notification.message,
+        idempotencyKey
       });
 
       if (!result.success) {
@@ -58,17 +88,21 @@ const smsWorker = new Worker(
       return result;
 
     } catch (error) {
-      await DeliveryLog.updateOne(
-        { notificationId, channel: "sms" },
-        {
-          $set: {
-            status: "failed",
-            error: error.message
-          }
-        }
-      );
+      console.log("SMS attempt failed:", error.message);
 
-      await updateNotificationStatus(notificationId);
+      await DeliveryLog.updateOne(
+          {
+              notificationId,
+              channel: "sms",
+              status: "processing"
+          },
+          {
+              $set: {
+                  status: "pending",
+                  error: error.message
+              }
+          }
+      );
 
       throw error;
     }

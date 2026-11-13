@@ -17,36 +17,61 @@ const emailWorker = new Worker(
 
         const { notificationId, recipientId } = job.data;
 
+        const idempotencyKey = `${notificationId}:email`;
+
         const notification = await Notification.findById(notificationId);
 
         if (!notification) {
             throw new Error("Notification not found");
         }
 
-        await DeliveryLog.findOneAndUpdate(
+        await DeliveryLog.updateOne(
+            { notificationId, channel: "email" },
+            {
+                $setOnInsert: {
+                    notificationId,
+                    channel: "email",
+                    status: "pending"
+                }
+            },
+            { upsert: true }
+        );
+
+        const claimedDelivery = await DeliveryLog.findOneAndUpdate(
             {
                 notificationId,
-                channel: "email"
+                channel: "email",
+                status: { $in: ["pending", "failed"] }
             },
             {
                 $set: {
-                    status: "pending",
+                    status: "processing",
+                    processingAt: new Date(),
                     error: null
                 }
             },
-            {
-                upsert: true,
-                returnDocument: "after"
-            }
+            { returnDocument: "after" }
         );
+
+        if (!claimedDelivery) {
+            console.log("Email already processing or delivered. Skipping:", job.id);
+
+            return {
+                success: true,
+                skipped: true,
+                reason: "Already processing or delivered"
+            };
+        }
 
         await updateNotificationStatus(notificationId);
 
         try {
+
             const result = await sendEmail({
                 recipientId,
                 title: notification.title,
-                message: notification.message
+                message: notification.message,
+                idempotencyKey
             });
 
             if (!result.success) {
@@ -75,6 +100,21 @@ const emailWorker = new Worker(
 
         } catch (error) {
             console.log("Email attempt failed:", error.message);
+
+            await DeliveryLog.updateOne(
+                {
+                    notificationId,
+                    channel: "email",
+                    status: "processing"
+                },
+                {
+                    $set: {
+                        status: "pending",
+                        error: error.message
+                    }
+                }
+            );
+
             throw error;
         }
     },

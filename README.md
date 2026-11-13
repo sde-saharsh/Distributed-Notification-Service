@@ -142,19 +142,3 @@ cd 'Distributed Notification Service'
 node src/processes/dlq.js
 
 
-next prompt 
-
-saharsh@sde-saharsh:~/Desktop/Distributed Notification Service$ tree src/workers
-src/workers
-├── email.worker.js
-├── fanout.worker.js
-├── push.worker.js
-└── sms.worker.js
-
-1 directory, 4 files
-saharsh@sde-saharsh:~/Desktop/Distributed Notification Service$ find src/workers -maxdepth 2 -type f
-src/workers/fanout.worker.js
-src/workers/push.worker.js
-src/workers/sms.worker.js
-src/workers/email.worker.js
-saharsh@sde-saharsh:~/Desktop/Distributed Notification Service$ 

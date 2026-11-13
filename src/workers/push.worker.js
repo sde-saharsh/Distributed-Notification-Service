@@ -13,29 +13,60 @@ const pushWorker = new Worker(
 
     const { notificationId, recipientId } = job.data;
 
+    const idempotencyKey = `${notificationId}:push`;
+
     const notification = await Notification.findById(notificationId);
 
     if (!notification) {
       throw new Error("Notification not found");
     }
 
-    await DeliveryLog.findOneAndUpdate(
-      { notificationId, channel: "push" },
-      {
-        $set: {
-          status: "pending",
-          error: null
-        }
-      },
-      { upsert: true, new: true }
+    await DeliveryLog.updateOne(
+        { notificationId, channel: "push" },
+        {
+            $setOnInsert: {
+                notificationId,
+                channel: "push",
+                status: "pending"
+            }
+        },
+        { upsert: true }
     );
+
+    const claimedDelivery = await DeliveryLog.findOneAndUpdate(
+        {
+            notificationId,
+            channel: "push",
+            status: { $in: ["pending", "failed"] }
+        },
+        {
+            $set: {
+                status: "processing",
+                error: null
+            }
+        },
+        { returnDocument: "after" }
+    );
+
+    if (!claimedDelivery) {
+        console.log("Email already processing or delivered. Skipping:", job.id);
+
+        return {
+            success: true,
+            skipped: true,
+            reason: "Already processing or delivered"
+        };
+    }
+    
     await updateNotificationStatus(notificationId);
 
     try {
+
       const result = await sendPush({
         recipientId,
         title: notification.title,
-        message: notification.message
+        message: notification.message,
+        idempotencyKey
       });
 
       if (!result.success) {
@@ -59,16 +90,21 @@ const pushWorker = new Worker(
       return result;
 
     } catch (error) {
+      console.log("Push attempt failed:", error.message);
+
       await DeliveryLog.updateOne(
-        { notificationId, channel: "push" },
-        {
-          $set: {
-            status: "failed",
-            error: error.message
+          {
+              notificationId,
+              channel: "push",
+              status: "processing"
+          },
+          {
+              $set: {
+                  status: "pending",
+                  error: error.message
+              }
           }
-        }
       );
-      await updateNotificationStatus(notificationId);
 
       throw error;
     }
